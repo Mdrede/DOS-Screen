@@ -1,0 +1,129 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+#display-wrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ── Media display area ── */
+#display {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* ── Image slides ── */
+.slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+}
+
+/* New image enters from the left */
+@keyframes enter-from-left {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(0); }
+}
+
+/* Old image exits to the right */
+@keyframes exit-to-right {
+    from { transform: translateX(0); }
+    to   { transform: translateX(100%); }
+}
+
+.slide.entering {
+    animation: enter-from-left 0.75s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.slide.exiting {
+    animation: exit-to-right 0.75s cubic-bezier(0.55, 0, 0.75, 0.06) forwards;
+}
+
+/* ── Video player ── */
+.video-player {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+}
+
+/* ── Idle / waiting screen ── */
+#idle-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    z-index: 10;
+}
+
+#idle-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.idle-content {
+    text-align: center;
+    color: #444;
+}
+
+.idle-logo {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: #333;
+    margin-bottom: 1rem;
+}
+
+.idle-sub {
+    font-size: 1rem;
+    letter-spacing: 0.15em;
+    color: #2a2a2a;
+    margin-bottom: 2rem;
+}
+
+.idle-dot-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #333;
+    animation: pulse 1.4s ease-in-out infinite;
+}
+
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.2; transform: scale(0.8); }
+    50%       { opacity: 1;   transform: scale(1.2); }
+}

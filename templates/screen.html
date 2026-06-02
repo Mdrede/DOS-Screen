@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOS Screen</title>
+    <link rel="stylesheet" href="/static/css/screen.css">
+</head>
+<body>
+    <div id="display-wrapper">
+        <div id="display"></div>
+        <div id="idle-screen">
+            <div class="idle-content">
+                <div class="idle-logo">DOS SCREEN</div>
+                <div class="idle-sub">Waiting for content...</div>
+                <div class="idle-dot-row">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="/static/js/screen.js"></script>
+</body>
+</html>

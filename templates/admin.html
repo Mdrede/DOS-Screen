@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOS Screen — Admin</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+
+<!-- TOP BAR -->
+<header>
+    <div class="header-left">
+        <span class="logo">DOS SCREEN</span>
+        <span class="header-sub">Admin Panel</span>
+    </div>
+    <div class="header-right">
+        <span id="status-badge" class="badge badge-idle">Stopped</span>
+        <button id="btn-start" class="btn btn-green" onclick="startSlideshow()">▶ Start</button>
+        <button id="btn-stop" class="btn btn-red" onclick="stopSlideshow()">■ Stop</button>
+    </div>
+</header>
+
+<main>
+
+    <!-- LEFT COLUMN: Upload + Media Library -->
+    <aside class="sidebar">
+
+        <!-- Upload -->
+        <section class="card">
+            <h2>Upload Media</h2>
+            <div id="drop-zone" class="drop-zone" onclick="document.getElementById('file-input').click()">
+                <div class="drop-icon">+</div>
+                <div class="drop-text">Click or drag files here</div>
+                <div class="drop-hint">JPG · PNG · GIF · MP4 · MOV</div>
+            </div>
+            <input type="file" id="file-input" multiple accept="image/*,video/*" style="display:none" onchange="uploadFiles(this.files)">
+            <div id="upload-progress"></div>
+        </section>
+
+        <!-- Image duration setting -->
+        <section class="card">
+            <h2>Image Display Time</h2>
+            <div class="duration-row">
+                <input type="number" id="image-duration" value="5" min="1" max="60">
+                <span>seconds per image</span>
+            </div>
+        </section>
+
+        <!-- Media Library -->
+        <section class="card library-card">
+            <div class="card-header-row">
+                <h2>Media Library</h2>
+                <button class="btn-sm" onclick="loadMedia()">Refresh</button>
+            </div>
+
+            <div class="library-tabs">
+                <button class="tab active" onclick="switchTab('images', this)">Images</button>
+                <button class="tab" onclick="switchTab('videos', this)">Videos</button>
+            </div>
+
+            <div id="tab-images" class="tab-content">
+                <div id="image-list" class="media-grid"></div>
+            </div>
+            <div id="tab-videos" class="tab-content hidden">
+                <div id="video-list" class="media-list"></div>
+            </div>
+        </section>
+
+    </aside>
+
+    <!-- RIGHT COLUMN: Playlist -->
+    <section class="content card">
+        <div class="card-header-row">
+            <h2>Playlist</h2>
+            <button class="btn-sm btn-danger" onclick="clearPlaylist()">Clear All</button>
+        </div>
+        <p class="hint">Click items in the library to add them. Drag to reorder.</p>
+
+        <div id="playlist" class="playlist-container">
+            <div class="playlist-empty">No items yet — add from the library</div>
+        </div>
+
+        <div class="save-row">
+            <button class="btn btn-blue" onclick="savePlaylist()">Save Playlist</button>
+            <span id="save-status"></span>
+        </div>
+    </section>
+
+</main>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="/static/js/admin.js"></script>
+</body>
+</html>
