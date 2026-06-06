@@ -12,25 +12,24 @@ echo.
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo  ERROR: Python is not installed!
-    echo.
     echo  Download from: https://python.org
-    echo  Make sure to check "Add Python to PATH"
-    echo.
     pause
     exit /b 1
 )
 
-echo  Installing / updating dependencies...
+:: Only install if flask is missing (skips pip on normal starts)
+python -c "import flask, flask_socketio" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo  First run - Installing dependencies...
+    pip install -r requirements.txt --no-index --find-links=packages/ --quiet
+    echo  Done.
+) else (
+    echo  Dependencies OK.
+)
+
 echo.
-pip install -r requirements.txt --quiet --upgrade
-echo.
-echo  ==========================================
-echo.
-echo  Server is starting...
-echo  Open Admin Panel: http://localhost:5000/admin
-echo  TV Screens open:  http://YOUR-IP:5000
-echo.
-echo  Press Ctrl+C to stop the server
+echo  Server starting...
+echo  Admin Panel : http://localhost:5000/admin
 echo  ==========================================
 echo.
 

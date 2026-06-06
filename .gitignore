@@ -17,6 +17,8 @@ media/videos/*
 !media/images/.gitkeep
 !media/videos/.gitkeep
 
+# Keep packages folder in git for offline POS setup
+
 # OS
 .DS_Store
 Thumbs.db
