@@ -206,5 +206,86 @@ function escHtml(s) {
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── Countdown ─────────────────────────────────────────────
+async function loadCountdown() {
+    const res = await fetch('/api/countdown');
+    const data = await res.json();
+    document.getElementById('cd-enabled').checked = data.enabled;
+    document.getElementById('cd-name').value = data.restaurant_name || 'DOS BURGER';
+    document.getElementById('cd-duration').value = data.show_duration || 30;
+    document.getElementById('cd-only').checked = data.countdown_only || false;
+    if (data.target_date) {
+        const d = new Date(data.target_date);
+        const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        document.getElementById('cd-date').value = local;
+    }
+    if (data.campaign_start) {
+        const d = new Date(data.campaign_start);
+        const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        document.getElementById('cd-start').value = local;
+    }
+}
+
+async function saveCountdown() {
+    const dateVal = document.getElementById('cd-date').value;
+    const payload = {
+        enabled:         document.getElementById('cd-enabled').checked,
+        restaurant_name: document.getElementById('cd-name').value,
+        target_date:     dateVal ? new Date(dateVal).toISOString() : null,
+        campaign_start:  document.getElementById('cd-start').value ? new Date(document.getElementById('cd-start').value).toISOString() : null,
+        show_duration:   parseInt(document.getElementById('cd-duration').value) || 30,
+        countdown_only:  document.getElementById('cd-only').checked
+    };
+    await fetch('/api/countdown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+    const status = document.getElementById('save-status');
+    status.textContent = 'Countdown saved!';
+    setTimeout(() => status.textContent = '', 3000);
+}
+
+// ── Screen 2 ──────────────────────────────────────────────
+async function loadScreen2() {
+    const res = await fetch('/api/screen2');
+    const data = await res.json();
+    document.getElementById('screen2-text').value = data.text || '';
+}
+
+async function saveScreen2() {
+    const text = document.getElementById('screen2-text').value;
+    await fetch('/api/screen2', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+    });
+    const status = document.getElementById('save-status');
+    status.textContent = 'Screen 2 saved!';
+    setTimeout(() => status.textContent = '', 3000);
+}
+
+// ── Pic Loop ──────────────────────────────────────────────
+async function loadPicLoop() {
+    const res = await fetch('/api/pic_loop');
+    const data = await res.json();
+    document.getElementById('pic-loop').checked = data.enabled || false;
+}
+
+async function savePicLoop() {
+    const enabled = document.getElementById('pic-loop').checked;
+    await fetch('/api/pic_loop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled })
+    });
+    const status = document.getElementById('save-status');
+    status.textContent = enabled ? 'Pic Loop ON' : 'Pic Loop OFF';
+    setTimeout(() => status.textContent = '', 3000);
+}
+
 // Init
 loadMedia();
+loadCountdown();
+loadScreen2();
+loadPicLoop();

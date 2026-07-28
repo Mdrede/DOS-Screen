@@ -17,6 +17,10 @@ media/videos/*
 !media/images/.gitkeep
 !media/videos/.gitkeep
 
+# Local settings (playlist, countdown config) — set up per machine
+settings.json
+server.log
+
 # Keep packages folder in git for offline POS setup
 
 # OS

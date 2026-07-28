@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOS Screen 2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 3px,
+                rgba(0,0,0,0.07) 3px,
+                rgba(0,0,0,0.07) 4px
+            );
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* ── Text mode ── */
+        #text-screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #text-screen.hidden { display: none; }
+
+        .neon-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2em;
+            padding: 0 6vw;
+        }
+
+        .neon-text {
+            font-family: 'Cairo', sans-serif;
+            font-weight: 900;
+            font-size: clamp(4rem, 14vw, 16rem);
+            color: #F5C518;
+            text-align: center;
+            line-height: 1.2;
+            animation: neon-flicker 5s infinite;
+            user-select: none;
+            text-shadow:
+                5px 5px 0 #8B6914,
+                0 0 50px rgba(245, 197, 24, 0.6);
+        }
+
+        @keyframes neon-flicker {
+            0%, 90% { opacity: 1; }
+            92%     { opacity: 0.05; }
+            93%     { opacity: 1; }
+            95%     { opacity: 0.05; }
+            96%     { opacity: 1; }
+            97%     { opacity: 0.4; }
+            98%     { opacity: 1; }
+            100%    { opacity: 1; }
+        }
+
+        /* ── Pic Loop image mode ── */
+        #image-screen {
+            position: absolute;
+            inset: 0;
+            display: none;
+        }
+
+        #image-screen.active { display: block; }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        @keyframes enter-from-left {
+            from { transform: translateX(-100%); }
+            to   { transform: translateX(0); }
+        }
+
+        @keyframes exit-to-right {
+            from { transform: translateX(0); }
+            to   { transform: translateX(100%); }
+        }
+
+        .slide.entering {
+            animation: enter-from-left 0.75s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        .slide.exiting {
+            animation: exit-to-right 0.75s cubic-bezier(0.55, 0, 0.75, 0.06) forwards;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="text-screen">
+        <div class="neon-wrap">
+            <div class="neon-text" id="screen2-text">مفتوح الآن</div>
+        </div>
+    </div>
+
+    <div id="image-screen"></div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+    const socket = io({ transports: ['websocket'], reconnectionDelay: 2000, reconnectionAttempts: Infinity });
+    const textScreen  = document.getElementById('text-screen');
+    const imageScreen = document.getElementById('image-screen');
+    let currentFile = null;
+
+    socket.on('connect', () => socket.emit('join_screen2'));
+
+    socket.on('screen2_init', (data) => {
+        document.getElementById('screen2-text').textContent = data.text || 'مفتوح الآن';
+        if (data.pic_loop) {
+            textScreen.classList.add('hidden');
+            imageScreen.classList.add('active');
+            if (data.last_item) showImage(data.last_item.file);
+        } else {
+            textScreen.classList.remove('hidden');
+            imageScreen.classList.remove('active');
+            currentFile = null;
+            imageScreen.innerHTML = '';
+        }
+    });
+
+    socket.on('show_item_screen2', (data) => {
+        if (data.type === 'image') showImage(data.file);
+    });
+
+    function showImage(filename) {
+        if (currentFile === filename) return;
+        currentFile = filename;
+
+        const old = imageScreen.querySelector('.slide:not(.exiting)');
+        if (old) {
+            old.classList.add('exiting');
+            old.addEventListener('animationend', () => old.remove(), { once: true });
+        }
+
+        const img = document.createElement('img');
+        img.className = 'slide entering';
+        img.src = `/media/images/${encodeURIComponent(filename)}`;
+        img.addEventListener('animationend', () => img.classList.remove('entering'), { once: true });
+        img.addEventListener('error', () => img.remove());
+        imageScreen.appendChild(img);
+    }
+</script>
+</body>
+</html>

@@ -1,17 +1,39 @@
 import os
+import re
 import time
 import threading
 import socket
-from flask import Flask, render_template, request, jsonify, send_from_directory
+import mimetypes
+import json
+from flask import Flask, render_template, request, jsonify, send_from_directory, Response
 from flask_socketio import SocketIO, emit
 from werkzeug.utils import secure_filename
+
+SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'settings.json')
+
+def load_settings():
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, 'r') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def save_settings(data):
+    try:
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        pass
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'dos-screen-secret-key'
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media')
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB
 
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading',
+                    ping_interval=60, ping_timeout=120)
 
 ALLOWED_IMAGES = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
 ALLOWED_VIDEOS = {'mp4', 'webm', 'mov', 'avi'}
@@ -23,8 +45,40 @@ state = {
     'current_started_at': None,
     'image_duration': 5,
     'thread': None,
-    'lock': threading.Lock()
+    'lock': threading.Lock(),
+    'video_done': threading.Event(),
+    'screen2_last': None
 }
+
+countdown = {
+    'enabled': True,
+    'target_date': '2026-06-17T00:00:00',
+    'campaign_start': '2026-06-01T00:00:00',  # when countdown campaign began
+    'restaurant_name': 'DOS BURGER',
+    'show_duration': 30,
+    'countdown_only': False
+}
+
+screen2 = {
+    'text': 'مفتوح الآن'
+}
+
+pic_loop = {
+    'enabled': False
+}
+
+# Load saved settings
+_saved = load_settings()
+if 'playlist' in _saved:
+    state['playlist'] = _saved['playlist']
+if 'image_duration' in _saved:
+    state['image_duration'] = _saved['image_duration']
+if 'countdown' in _saved:
+    countdown.update(_saved['countdown'])
+if 'screen2' in _saved:
+    screen2.update(_saved['screen2'])
+if 'pic_loop' in _saved:
+    pic_loop.update(_saved['pic_loop'])
 
 def allowed_image(f): return '.' in f and f.rsplit('.', 1)[1].lower() in ALLOWED_IMAGES
 def allowed_video(f): return '.' in f and f.rsplit('.', 1)[1].lower() in ALLOWED_VIDEOS
@@ -43,7 +97,26 @@ def get_current_item():
     }
 
 def slideshow_thread():
+    # Countdown-only mode — show countdown forever, no playlist
+    if countdown.get('countdown_only') and countdown.get('enabled'):
+        socketio.emit('show_countdown', countdown)
+        while state['running']:
+            time.sleep(1)
+        return
+
     while state['running'] and state['playlist']:
+
+        # Show countdown at the start of every loop
+        if countdown['enabled'] and state['current_index'] == 0:
+            socketio.emit('show_countdown', countdown)
+            elapsed = 0
+            while elapsed < countdown['show_duration'] and state['running']:
+                time.sleep(0.2)
+                elapsed += 0.2
+            if not state['running']:
+                return
+            socketio.emit('hide_countdown', {})
+
         with state['lock']:
             if not state['running']:
                 break
@@ -53,12 +126,24 @@ def slideshow_thread():
 
         socketio.emit('show_item', current)
 
-        duration = item.get('duration', state['image_duration'])
-        start = time.time()
-        while time.time() - start < duration:
-            if not state['running']:
-                return
-            time.sleep(0.1)
+        if item['type'] == 'video':
+            # Wait for client to signal video finished
+            state['video_done'].clear()
+            timeout = item.get('duration', 0)
+            timeout = timeout if timeout > 5 else 3600  # fallback 1hr if duration unknown
+            state['video_done'].wait(timeout=timeout)
+        else:
+            duration = item.get('duration', state['image_duration'])
+            start = time.time()
+            while time.time() - start < duration:
+                if not state['running']:
+                    return
+                time.sleep(0.1)
+
+        # Send finished image to screen 2 if pic loop is on
+        if pic_loop.get('enabled') and item['type'] == 'image':
+            state['screen2_last'] = current
+            socketio.emit('show_item_screen2', current)
 
         with state['lock']:
             if state['running'] and state['playlist']:
@@ -71,6 +156,21 @@ def screen():
 @app.route('/admin')
 def admin():
     return render_template('admin.html')
+
+@app.route('/2')
+def screen2_page():
+    return render_template('screen2.html')
+
+@app.route('/api/screen2', methods=['GET'])
+def get_screen2():
+    return jsonify(screen2)
+
+@app.route('/api/screen2', methods=['POST'])
+def set_screen2():
+    data = request.json
+    screen2.update(data)
+    save_settings({'playlist': state['playlist'], 'image_duration': state['image_duration'], 'countdown': countdown, 'screen2': screen2})
+    return jsonify({'status': 'ok'})
 
 @app.route('/api/media')
 def api_media():
@@ -89,11 +189,23 @@ def api_set_playlist():
     data = request.json
     state['playlist'] = data.get('playlist', [])
     state['image_duration'] = data.get('image_duration', 5)
+    save_settings({'playlist': state['playlist'], 'image_duration': state['image_duration'], 'countdown': countdown})
     return jsonify({'status': 'ok', 'count': len(state['playlist'])})
+
+@app.route('/api/countdown', methods=['GET'])
+def get_countdown():
+    return jsonify(countdown)
+
+@app.route('/api/countdown', methods=['POST'])
+def set_countdown():
+    data = request.json
+    countdown.update(data)
+    save_settings({'playlist': state['playlist'], 'image_duration': state['image_duration'], 'countdown': countdown})
+    return jsonify({'status': 'ok'})
 
 @app.route('/api/start', methods=['POST'])
 def api_start():
-    if not state['playlist']:
+    if not state['playlist'] and not countdown.get('countdown_only'):
         return jsonify({'error': 'Playlist is empty. Add items first.'}), 400
     state['running'] = False
     if state['thread'] and state['thread'].is_alive():
@@ -132,15 +244,85 @@ def upload():
 
 @app.route('/media/<path:filename>')
 def serve_media(filename):
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    if not os.path.exists(file_path):
+        return "Not found", 404
+
+    mime = mimetypes.guess_type(file_path)[0] or 'application/octet-stream'
+    file_size = os.path.getsize(file_path)
+    range_header = request.headers.get('Range')
+
+    if range_header:
+        match = re.search(r'bytes=(\d+)-(\d*)', range_header)
+        byte_start = int(match.group(1)) if match else 0
+        byte_end = int(match.group(2)) if match and match.group(2) else file_size - 1
+        byte_end = min(byte_end, file_size - 1)
+        length = byte_end - byte_start + 1
+
+        def generate():
+            with open(file_path, 'rb') as f:
+                f.seek(byte_start)
+                remaining = length
+                while remaining > 0:
+                    chunk = f.read(min(65536, remaining))
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
+                    yield chunk
+
+        resp = Response(generate(), 206, mimetype=mime, direct_passthrough=True)
+        resp.headers['Content-Range'] = f'bytes {byte_start}-{byte_end}/{file_size}'
+        resp.headers['Accept-Ranges'] = 'bytes'
+        resp.headers['Content-Length'] = length
+        return resp
+
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/api/pic_loop', methods=['GET'])
+def get_pic_loop():
+    return jsonify(pic_loop)
+
+@app.route('/api/pic_loop', methods=['POST'])
+def set_pic_loop():
+    data = request.json
+    pic_loop.update(data)
+    save_settings({'playlist': state['playlist'], 'image_duration': state['image_duration'], 'countdown': countdown, 'screen2': screen2, 'pic_loop': pic_loop})
+    socketio.emit('screen2_init', {'text': screen2.get('text', ''), 'pic_loop': pic_loop.get('enabled', False)})
+    return jsonify({'status': 'ok'})
 
 @socketio.on('connect')
 def on_connect():
-    emit('show_item', get_current_item())
+    if state['running'] and countdown.get('enabled') and countdown.get('countdown_only'):
+        emit('show_countdown', countdown)
+    else:
+        emit('show_item', get_current_item())
+
+@socketio.on('join_screen2')
+def on_join_screen2():
+    data = {'text': screen2.get('text', ''), 'pic_loop': pic_loop.get('enabled', False)}
+    if pic_loop.get('enabled') and state.get('screen2_last'):
+        data['last_item'] = state['screen2_last']
+    emit('screen2_init', data)
 
 @socketio.on('request_state')
 def on_request_state():
-    emit('show_item', get_current_item())
+    if state['running'] and countdown.get('enabled') and countdown.get('countdown_only'):
+        emit('show_countdown', countdown)
+    else:
+        emit('show_item', get_current_item())
+
+@socketio.on('video_duration')
+def on_video_duration(data):
+    with state['lock']:
+        if state['running'] and state['playlist']:
+            item = state['playlist'][state['current_index']]
+            if item['type'] == 'video' and item.get('duration', 0) == 0:
+                item['duration'] = data.get('duration', 10)
+
+@socketio.on('video_ended')
+def on_video_ended():
+    # Signal the slideshow thread to advance — thread does the actual advancing
+    state['video_done'].set()
 
 if __name__ == '__main__':
     os.makedirs('media/images', exist_ok=True)
@@ -162,4 +344,12 @@ if __name__ == '__main__':
     print("    Point TV browsers to the TV Screens URL")
     print("=" * 54 + "\n")
 
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False, allow_unsafe_werkzeug=True)
+    # Auto-start if playlist exists OR countdown-only mode is on
+    if state['playlist'] or (countdown.get('enabled') and countdown.get('countdown_only')):
+        state['running'] = True
+        state['thread'] = threading.Thread(target=slideshow_thread, daemon=True)
+        state['thread'].start()
+        print("    Auto-started slideshow.\n")
+
+    port = int(os.environ.get('PORT', 5000))
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)

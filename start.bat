@@ -21,7 +21,7 @@ if %errorlevel% neq 0 (
 python -c "import flask, flask_socketio" >nul 2>&1
 if %errorlevel% neq 0 (
     echo  First run - Installing dependencies...
-    pip install -r requirements.txt --no-index --find-links=packages/ --quiet
+    pip install -r requirements.txt --quiet
     echo  Done.
 ) else (
     echo  Dependencies OK.

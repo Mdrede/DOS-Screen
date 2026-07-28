@@ -47,6 +47,56 @@
             </div>
         </section>
 
+        <!-- Countdown Settings -->
+        <section class="card">
+            <div class="card-header-row">
+                <h2>Countdown Timer</h2>
+                <label class="toggle">
+                    <input type="checkbox" id="cd-enabled" onchange="saveCountdown()">
+                    <span class="toggle-label">ON</span>
+                </label>
+            </div>
+            <div class="cd-settings">
+                <div class="cd-field">
+                    <label>Restaurant Name</label>
+                    <input type="text" id="cd-name" value="DOS BURGER" placeholder="DOS BURGER">
+                </div>
+                <div class="cd-field">
+                    <label>Campaign Start Date (when loading bar begins at 0%)</label>
+                    <input type="datetime-local" id="cd-start">
+                </div>
+                <div class="cd-field">
+                    <label>Opening Date (when loading bar reaches 100%)</label>
+                    <input type="datetime-local" id="cd-date">
+                </div>
+                <div class="cd-field">
+                    <label>Show for (seconds) — ignored in countdown-only mode</label>
+                    <input type="number" id="cd-duration" value="30" min="5" max="300">
+                </div>
+                <label class="toggle" style="margin-top:4px">
+                    <input type="checkbox" id="cd-only" onchange="saveCountdown()">
+                    <span class="toggle-label">Countdown only (hide all pics &amp; videos)</span>
+                </label>
+                <button class="btn btn-blue" onclick="saveCountdown()" style="width:100%;margin-top:8px">Save Countdown</button>
+            </div>
+        </section>
+
+        <!-- Screen 2 -->
+        <section class="card">
+            <h2>Screen 2</h2>
+            <div class="cd-field">
+                <label>Text shown on /2 screen</label>
+                <input type="text" id="screen2-text" placeholder="مفتوح الآن" style="font-size:1.1rem;direction:rtl">
+            </div>
+            <button class="btn btn-blue" onclick="saveScreen2()" style="width:100%;margin-top:8px">Save Text</button>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #333">
+                <label class="toggle">
+                    <input type="checkbox" id="pic-loop" onchange="savePicLoop()">
+                    <span class="toggle-label">Pic Loop — images flow from Screen 1 → Screen 2</span>
+                </label>
+            </div>
+        </section>
+
         <!-- Media Library -->
         <section class="card library-card">
             <div class="card-header-row">
