@@ -23,6 +23,14 @@ async function loadMedia() {
     mediaLib = await res.json();
     renderImages();
     renderVideos();
+    renderFixedPicOptions();
+}
+
+function renderFixedPicOptions() {
+    const sel = document.getElementById('fixed-pic-file');
+    const current = sel.value;
+    sel.innerHTML = mediaLib.images.map(f => `<option value="${escHtml(f)}">${escHtml(f)}</option>`).join('');
+    if (mediaLib.images.includes(current)) sel.value = current;
 }
 
 function renderImages() {
@@ -91,7 +99,7 @@ async function uploadFiles(files) {
                 status.textContent = 'Done';
                 if (!mediaLib[data.type + 's'].includes(data.file)) {
                     mediaLib[data.type + 's'].push(data.file);
-                    if (data.type === 'image') renderImages();
+                    if (data.type === 'image') { renderImages(); renderFixedPicOptions(); }
                     else renderVideos();
                 }
             } else {
@@ -284,8 +292,44 @@ async function savePicLoop() {
     setTimeout(() => status.textContent = '', 3000);
 }
 
+// ── Fixed Picture ─────────────────────────────────────────
+async function loadFixedPic() {
+    const res = await fetch('/api/fixed_pic');
+    const data = await res.json();
+    document.getElementById('fixed-pic-enabled').checked = data.enabled || false;
+    if (data.file) {
+        const sel = document.getElementById('fixed-pic-file');
+        if (![...sel.options].some(o => o.value === data.file)) {
+            const opt = document.createElement('option');
+            opt.value = data.file;
+            opt.textContent = data.file;
+            sel.appendChild(opt);
+        }
+        sel.value = data.file;
+    }
+}
+
+async function saveFixedPic() {
+    const enabled = document.getElementById('fixed-pic-enabled').checked;
+    const file = document.getElementById('fixed-pic-file').value;
+    if (enabled && !file) {
+        alert('Upload an image first.');
+        document.getElementById('fixed-pic-enabled').checked = false;
+        return;
+    }
+    await fetch('/api/fixed_pic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled, file })
+    });
+    const status = document.getElementById('save-status');
+    status.textContent = enabled ? 'Fixed Picture ON — click Start to apply' : 'Fixed Picture OFF';
+    setTimeout(() => status.textContent = '', 3000);
+}
+
 // Init
 loadMedia();
 loadCountdown();
 loadScreen2();
 loadPicLoop();
+loadFixedPic();

@@ -67,6 +67,11 @@ pic_loop = {
     'enabled': False
 }
 
+fixed_pic = {
+    'enabled': False,
+    'file': None
+}
+
 # Load saved settings
 _saved = load_settings()
 if 'playlist' in _saved:
@@ -79,6 +84,18 @@ if 'screen2' in _saved:
     screen2.update(_saved['screen2'])
 if 'pic_loop' in _saved:
     pic_loop.update(_saved['pic_loop'])
+if 'fixed_pic' in _saved:
+    fixed_pic.update(_saved['fixed_pic'])
+
+def persist_settings():
+    save_settings({
+        'playlist': state['playlist'],
+        'image_duration': state['image_duration'],
+        'countdown': countdown,
+        'screen2': screen2,
+        'pic_loop': pic_loop,
+        'fixed_pic': fixed_pic
+    })
 
 def allowed_image(f): return '.' in f and f.rsplit('.', 1)[1].lower() in ALLOWED_IMAGES
 def allowed_video(f): return '.' in f and f.rsplit('.', 1)[1].lower() in ALLOWED_VIDEOS
@@ -96,7 +113,17 @@ def get_current_item():
         'total': len(state['playlist'])
     }
 
+def get_fixed_pic_item():
+    return {'running': True, 'type': 'image', 'file': fixed_pic['file'], 'index': 0, 'total': 1}
+
 def slideshow_thread():
+    # Fixed picture mode — show one image forever, no looping
+    if fixed_pic.get('enabled') and fixed_pic.get('file'):
+        socketio.emit('show_item', get_fixed_pic_item())
+        while state['running']:
+            time.sleep(1)
+        return
+
     # Countdown-only mode — show countdown forever, no playlist
     if countdown.get('countdown_only') and countdown.get('enabled'):
         socketio.emit('show_countdown', countdown)
@@ -169,7 +196,7 @@ def get_screen2():
 def set_screen2():
     data = request.json
     screen2.update(data)
-    save_settings({'playlist': state['playlist'], 'image_duration': state['image_duration'], 'countdown': countdown, 'screen2': screen2})
+    persist_settings()
     return jsonify({'status': 'ok'})
 
 @app.route('/api/media')
@@ -182,6 +209,8 @@ def api_media():
 
 @app.route('/api/status')
 def api_status():
+    if state['running'] and fixed_pic.get('enabled') and fixed_pic.get('file'):
+        return jsonify(get_fixed_pic_item())
     return jsonify(get_current_item())
 
 @app.route('/api/playlist', methods=['POST'])
@@ -189,7 +218,7 @@ def api_set_playlist():
     data = request.json
     state['playlist'] = data.get('playlist', [])
     state['image_duration'] = data.get('image_duration', 5)
-    save_settings({'playlist': state['playlist'], 'image_duration': state['image_duration'], 'countdown': countdown})
+    persist_settings()
     return jsonify({'status': 'ok', 'count': len(state['playlist'])})
 
 @app.route('/api/countdown', methods=['GET'])
@@ -200,12 +229,13 @@ def get_countdown():
 def set_countdown():
     data = request.json
     countdown.update(data)
-    save_settings({'playlist': state['playlist'], 'image_duration': state['image_duration'], 'countdown': countdown})
+    persist_settings()
     return jsonify({'status': 'ok'})
 
 @app.route('/api/start', methods=['POST'])
 def api_start():
-    if not state['playlist'] and not countdown.get('countdown_only'):
+    fixed_pic_ready = fixed_pic.get('enabled') and fixed_pic.get('file')
+    if not state['playlist'] and not countdown.get('countdown_only') and not fixed_pic_ready:
         return jsonify({'error': 'Playlist is empty. Add items first.'}), 400
     state['running'] = False
     if state['thread'] and state['thread'].is_alive():
@@ -286,13 +316,26 @@ def get_pic_loop():
 def set_pic_loop():
     data = request.json
     pic_loop.update(data)
-    save_settings({'playlist': state['playlist'], 'image_duration': state['image_duration'], 'countdown': countdown, 'screen2': screen2, 'pic_loop': pic_loop})
+    persist_settings()
     socketio.emit('screen2_init', {'text': screen2.get('text', ''), 'pic_loop': pic_loop.get('enabled', False)})
+    return jsonify({'status': 'ok'})
+
+@app.route('/api/fixed_pic', methods=['GET'])
+def get_fixed_pic():
+    return jsonify(fixed_pic)
+
+@app.route('/api/fixed_pic', methods=['POST'])
+def set_fixed_pic():
+    data = request.json
+    fixed_pic.update(data)
+    persist_settings()
     return jsonify({'status': 'ok'})
 
 @socketio.on('connect')
 def on_connect():
-    if state['running'] and countdown.get('enabled') and countdown.get('countdown_only'):
+    if state['running'] and fixed_pic.get('enabled') and fixed_pic.get('file'):
+        emit('show_item', get_fixed_pic_item())
+    elif state['running'] and countdown.get('enabled') and countdown.get('countdown_only'):
         emit('show_countdown', countdown)
     else:
         emit('show_item', get_current_item())
@@ -306,7 +349,9 @@ def on_join_screen2():
 
 @socketio.on('request_state')
 def on_request_state():
-    if state['running'] and countdown.get('enabled') and countdown.get('countdown_only'):
+    if state['running'] and fixed_pic.get('enabled') and fixed_pic.get('file'):
+        emit('show_item', get_fixed_pic_item())
+    elif state['running'] and countdown.get('enabled') and countdown.get('countdown_only'):
         emit('show_countdown', countdown)
     else:
         emit('show_item', get_current_item())
@@ -344,8 +389,8 @@ if __name__ == '__main__':
     print("    Point TV browsers to the TV Screens URL")
     print("=" * 54 + "\n")
 
-    # Auto-start if playlist exists OR countdown-only mode is on
-    if state['playlist'] or (countdown.get('enabled') and countdown.get('countdown_only')):
+    # Auto-start if playlist exists, countdown-only mode is on, or a fixed picture is set
+    if state['playlist'] or (countdown.get('enabled') and countdown.get('countdown_only')) or (fixed_pic.get('enabled') and fixed_pic.get('file')):
         state['running'] = True
         state['thread'] = threading.Thread(target=slideshow_thread, daemon=True)
         state['thread'].start()

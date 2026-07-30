@@ -81,6 +81,23 @@
             </div>
         </section>
 
+        <!-- Fixed Picture -->
+        <section class="card">
+            <div class="card-header-row">
+                <h2>Fixed Picture</h2>
+                <label class="toggle">
+                    <input type="checkbox" id="fixed-pic-enabled" onchange="saveFixedPic()">
+                    <span class="toggle-label">ON</span>
+                </label>
+            </div>
+            <div class="cd-field">
+                <label>Image to show (stays on screen, no looping)</label>
+                <select id="fixed-pic-file"></select>
+            </div>
+            <button class="btn btn-blue" onclick="saveFixedPic()" style="width:100%;margin-top:8px">Save Fixed Picture</button>
+            <p class="hint" style="margin-top:6px">Click ▶ Start to apply after saving.</p>
+        </section>
+
         <!-- Screen 2 -->
         <section class="card">
             <h2>Screen 2</h2>
