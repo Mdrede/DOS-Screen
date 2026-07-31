@@ -60,7 +60,7 @@ countdown = {
 }
 
 screen2 = {
-    'text': 'مفتوح الآن'
+    'text': ''
 }
 
 pic_loop = {

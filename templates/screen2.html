@@ -115,7 +115,7 @@
 
     <div id="text-screen" class="hidden">
         <div class="neon-wrap">
-            <div class="neon-text" id="screen2-text">مفتوح الآن</div>
+            <div class="neon-text" id="screen2-text"></div>
         </div>
     </div>
 
@@ -134,7 +134,7 @@
     socket.on('connect', () => socket.emit('join_screen2'));
 
     socket.on('screen2_init', (data) => {
-        document.getElementById('screen2-text').textContent = data.text || 'مفتوح الآن';
+        document.getElementById('screen2-text').textContent = data.text || '';
         if (data.pic_loop) {
             textScreen.classList.add('hidden');
             imageScreen.classList.add('active');
