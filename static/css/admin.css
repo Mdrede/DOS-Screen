@@ -340,8 +340,6 @@ main {
 }
 #save-status { font-size: 0.8rem; color: var(--green); }
 
-/* ── Countdown settings ── */
-.cd-settings { display: flex; flex-direction: column; gap: 8px; }
 .cd-field { display: flex; flex-direction: column; gap: 4px; }
 .cd-field label { font-size: 0.72rem; color: var(--text-muted); }
 .cd-field input {

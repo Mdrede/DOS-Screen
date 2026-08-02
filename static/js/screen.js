@@ -6,89 +6,12 @@ setTimeout(() => location.reload(), 30000);
 const display         = document.getElementById('display');
 const idleScreen      = document.getElementById('idle-screen');
 const videoPlayer     = document.getElementById('video-player');
-const countdownScreen = document.getElementById('countdown-screen');
 
 let currentFile = null;
-let countdownInterval = null;
-let progressInterval  = null;
 
 // Unmute on first interaction — no overlay needed
 document.addEventListener('click',   () => { videoPlayer.muted = false; }, { once: true });
 document.addEventListener('keydown', () => { videoPlayer.muted = false; }, { once: true });
-
-// ── Countdown ────────────────────────────────────────────
-socket.on('show_countdown', (data) => {
-    startCountdown(data.target_date);
-    startProgressBar(data.campaign_start, data.target_date);
-    countdownScreen.classList.remove('hidden');
-    idleScreen.classList.add('hidden');
-});
-
-socket.on('hide_countdown', () => {
-    countdownScreen.classList.add('hidden');
-    clearInterval(countdownInterval);
-    clearInterval(progressInterval);
-});
-
-function startProgressBar(campaignStart, targetDate) {
-    clearInterval(progressInterval);
-    const start  = new Date(campaignStart).getTime();
-    const target = new Date(targetDate).getTime();
-    const total  = target - start;
-
-    function update() {
-        const elapsed = Date.now() - start;
-        const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
-        document.getElementById('cd-progress-bar').style.width = pct + '%';
-        document.getElementById('cd-progress-pct').textContent = Math.floor(pct) + '%';
-    }
-
-    update();
-    progressInterval = setInterval(update, 60000);
-}
-
-function startCountdown(targetDate) {
-    clearInterval(countdownInterval);
-    const target = new Date(targetDate).getTime();
-
-    function update() {
-        const now = Date.now();
-        const diff = target - now;
-
-        if (diff <= 0) {
-            document.getElementById('cd-days').textContent    = '00';
-            document.getElementById('cd-hours').textContent   = '00';
-            document.getElementById('cd-minutes').textContent = '00';
-            document.getElementById('cd-seconds').textContent = '00';
-            return;
-        }
-
-        const days    = Math.floor(diff / 86400000);
-        const hours   = Math.floor((diff % 86400000) / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
-
-        setUnit('cd-days',    days);
-        setUnit('cd-hours',   hours);
-        setUnit('cd-minutes', minutes);
-        setUnit('cd-seconds', seconds);
-    }
-
-    function setUnit(id, value) {
-        const el = document.getElementById(id);
-        const str = String(value).padStart(2, '0');
-        if (el.textContent !== str) {
-            el.textContent = str;
-            el.classList.remove('tick');
-            void el.offsetWidth; // force reflow
-            el.classList.add('tick');
-            setTimeout(() => el.classList.remove('tick'), 150);
-        }
-    }
-
-    update();
-    countdownInterval = setInterval(update, 1000);
-}
 
 // ── Socket ───────────────────────────────────────────────
 socket.on('connect', () => socket.emit('request_state'));
@@ -96,8 +19,6 @@ socket.on('connect', () => socket.emit('request_state'));
 socket.on('show_item', (data) => {
     if (!data.running) { showIdle(); return; }
     hideIdle();
-    countdownScreen.classList.add('hidden');
-    clearInterval(countdownInterval);
     if (data.type === 'image') showImage(data.file);
     else if (data.type === 'video') showVideo(data.file, data.started_at);
 });
