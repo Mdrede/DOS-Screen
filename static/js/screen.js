@@ -1,8 +1,5 @@
 // Force WebSocket only — skip polling to prevent reconnection flickers
 const socket = io({ transports: ['websocket'], reconnectionDelay: 2000, reconnectionAttempts: Infinity });
-
-// Hard reload every 30s to keep content always in sync
-setTimeout(() => location.reload(), 30000);
 const display         = document.getElementById('display');
 const idleScreen      = document.getElementById('idle-screen');
 const videoPlayer     = document.getElementById('video-player');

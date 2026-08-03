@@ -124,9 +124,6 @@
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <script>
     const socket = io({ transports: ['websocket'], reconnectionDelay: 2000, reconnectionAttempts: Infinity });
-
-    // Hard reload every 30s to keep content always in sync
-    setTimeout(() => location.reload(), 30000);
     const textScreen  = document.getElementById('text-screen');
     const imageScreen = document.getElementById('image-screen');
     let currentFile = null;
