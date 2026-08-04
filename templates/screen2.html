@@ -92,22 +92,22 @@
             background: #000;
         }
 
-        @keyframes enter-from-left {
-            from { transform: translateX(-100%); }
+        @keyframes enter-from-right {
+            from { transform: translateX(100%); }
             to   { transform: translateX(0); }
         }
 
-        @keyframes exit-to-right {
+        @keyframes exit-to-left {
             from { transform: translateX(0); }
-            to   { transform: translateX(100%); }
+            to   { transform: translateX(-100%); }
         }
 
         .slide.entering {
-            animation: enter-from-left 0.75s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            animation: enter-from-right 0.75s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
         }
 
         .slide.exiting {
-            animation: exit-to-right 0.75s cubic-bezier(0.55, 0, 0.75, 0.06) forwards;
+            animation: exit-to-left 0.75s cubic-bezier(0.55, 0, 0.75, 0.06) forwards;
         }
     </style>
 </head>
