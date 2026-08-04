@@ -55,7 +55,7 @@ screen2 = {
 }
 
 pic_loop = {
-    'enabled': False
+    'enabled': True
 }
 
 fixed_pic = {

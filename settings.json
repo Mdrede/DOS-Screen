@@ -51,7 +51,7 @@
     "text": "الانتظار ساعة "
   },
   "pic_loop": {
-    "enabled": false
+    "enabled": true
   },
   "fixed_pic": {
     "enabled": false,
