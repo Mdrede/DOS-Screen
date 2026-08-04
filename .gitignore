@@ -11,14 +11,10 @@ build/
 venv/
 env/
 
-# Media files (too large for git - upload manually on each machine)
-media/images/*
+# Video files (too large for git - upload manually on each machine)
 media/videos/*
-!media/images/.gitkeep
 !media/videos/.gitkeep
 
-# Local settings (playlist, countdown config) — set up per machine
-settings.json
 server.log
 
 # Keep packages folder in git for offline POS setup
