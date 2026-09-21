@@ -14,7 +14,7 @@ SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'settin
 def load_settings():
     if os.path.exists(SETTINGS_FILE):
         try:
-            with open(SETTINGS_FILE, 'r') as f:
+            with open(SETTINGS_FILE, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception:
             pass
@@ -22,8 +22,8 @@ def load_settings():
 
 def save_settings(data):
     try:
-        with open(SETTINGS_FILE, 'w') as f:
-            json.dump(data, f, indent=2)
+        with open(SETTINGS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
     except Exception:
         pass
 
@@ -107,7 +107,11 @@ def get_fixed_pic_item():
 def slideshow_thread():
     # Fixed picture mode — show one image forever, no looping
     if fixed_pic.get('enabled') and fixed_pic.get('file'):
-        socketio.emit('show_item', get_fixed_pic_item())
+        item = get_fixed_pic_item()
+        socketio.emit('show_item', item)
+        if pic_loop.get('enabled'):
+            state['screen2_last'] = item
+            socketio.emit('show_item_screen2', item)
         while state['running']:
             time.sleep(1)
         return
