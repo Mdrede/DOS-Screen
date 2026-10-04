@@ -44,6 +44,11 @@
       "type": "image",
       "file": "Cheese Sauce.png",
       "duration": 5
+    },
+    {
+      "type": "image",
+      "file": "Pretzel_Triple_TV.png",
+      "duration": 5
     }
   ],
   "image_duration": 5,
