@@ -2,17 +2,22 @@
   "playlist": [
     {
       "type": "image",
-      "file": "Dos  Burger.png",
+      "file": "out_dos.png",
       "duration": 5
     },
     {
       "type": "image",
-      "file": "Double.png",
+      "file": "out_double_dos.png",
       "duration": 5
     },
     {
       "type": "image",
-      "file": "Chicken.png",
+      "file": "out_double_smash.png",
+      "duration": 5
+    },
+    {
+      "type": "image",
+      "file": "out_chicken.png",
       "duration": 5
     },
     {
@@ -32,11 +37,6 @@
     },
     {
       "type": "image",
-      "file": "Pretzel.png",
-      "duration": 5
-    },
-    {
-      "type": "image",
       "file": "Dos Sauce.png",
       "duration": 5
     },
@@ -47,7 +47,7 @@
     },
     {
       "type": "image",
-      "file": "Pretzel_Triple_TV.png",
+      "file": "out_triple.png",
       "duration": 5
     }
   ],
